@@ -1,8 +1,8 @@
 import pickle
 import streamlit as st
 import requests
-import os
 from dotenv import load_dotenv
+import os
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -15,12 +15,7 @@ def compute_similarity(movies):
     vectors = cv.fit_transform(movies["tags"]).toarray()
     similarity = cosine_similarity(vectors)
     return similarity
-
-
-
-
-
-
+    
 # ---------- Custom UI Styling ----------
 st.markdown("""
 <style>
@@ -125,6 +120,13 @@ def recommend(movie):
     
 
 # ------------------ Streamlit UI ------------------
+
+st.set_page_config(
+    page_title="Movie Recommender",
+    page_icon="🎬",
+    layout="wide"
+)
+
 st.markdown(
     "<h1 style='text-align:center; color:#8F7CFF; font-weight:700;'>🎬 Movie Recommender System</h1>",
     unsafe_allow_html=True
@@ -136,46 +138,55 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.set_page_config(
-    page_title="Movie Recommender",
-    page_icon="🎬",
-    layout="wide"
-)
 
-
-movies = pickle.load(open("model/movie_list.pkl", "rb"))
 similarity = compute_similarity(movies)
 
 movie_list = movies["title"].values
 selected_movie = st.selectbox(
     "🎥 Type or select a movie from the dropdown",
-    movie_list
+    movie_list,
+    index=None,
+    placeholder="Start typing to search a movie...",
+    key="movie_select"
 )
+
+
+
+
 
 
 st.sidebar.markdown("## 🎬 About This App")
-st.sidebar.write(
-    "Discover movies you’ll love using intelligent similarity analysis that "
-"matches films based on story, genre, and key features — not just popularity."
+st.sidebar.write("""
 
-)
+Discover movies you'll love through
+content-based similarity. This system
+analyzes storylines and genres using
+cosine similarity — not just popularity.
+""")
+
+st.sidebar.write("✨ Pick a movie to unlock smart recommendations.")
+
 
 
 if st.button("Show Recommendations"):
-    with st.spinner("Finding movies you’ll love... 🎥"):
-        names, posters = recommend(selected_movie)
+    if not st.session_state.get("movie_select"):
+        st.warning("Please select a movie from the dropdown 🎬")
+    else:
+        with st.spinner("Finding movies you’ll love... 🎥"):
+            names, posters = recommend(st.session_state["movie_select"])
+
+        st.divider()
+        cols = st.columns(len(names))
+        for col, name, poster in zip(cols, names, posters):
+            with col:
+                
+                st.image(poster, width=200)
+                st.markdown(
+                    f"<div class='movie-title'>{name}</div>",
+                    unsafe_allow_html=True
+                )
 
 
-    st.divider()
-
-    cols = st.columns(len(names))
-    for col, name, poster in zip(cols, names, posters):
-        with col:
-            st.image(poster, width=200)
-            st.markdown(
-                f"<div class='movie-title'>{name}</div>",
-                unsafe_allow_html=True
-            )
 def apply_theme(theme):
     if theme == "dark":
         st.markdown("""
